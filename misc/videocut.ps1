@@ -8,7 +8,7 @@ Param(
 	[parameter(ParameterSetName="TrackNum")]
 	[alias("Audio", "A")]
 	[Int]
-	$track = 1,
+	$track = 0,
     [parameter(Mandatory=$true,
     ValueFromRemainingArguments=$true)]
     [String[]]
@@ -74,10 +74,10 @@ For($i = 0; $i -lt $ts.Count / 2; $i++) {
     $newfile = (Get-Item $file).DirectoryName + $del + "intermediate" + $i;
     If($IsMP4) {
         $newfile += ".ts"
-        ffmpeg -ss $t1 -i $file -map 0:$track -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts $newfile -y
+        ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y
     } Else {
         $newfile += (Get-Item $file).Extension
-        ffmpeg -ss $t1 -i $file -map 0:$track -c copy -t $t2 $newfile -y
+        ffmpeg -ss $t1 -i $file -c copy -t $t2 -map 0:v -map 0:a:$track $newfile -y
     }
     $files += "'" + $newfile + "'"
 }
