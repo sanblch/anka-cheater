@@ -1,10 +1,21 @@
 #!/usr/bin/pwsh
 
-$file = $args[0]
-$t1 = $args[1]
-$t2 = $args[2]
+Param(
+    [parameter(Mandatory=$true,
+    Position=0)]
+    [String[]]
+    $file,
+	[parameter(ParameterSetName="TrackNum")]
+	[alias("Audio", "A")]
+	[Int]
+	$track = 1,
+    [parameter(Mandatory=$true,
+    ValueFromRemainingArguments=$true)]
+    [String[]]
+    $timespans
+)
 
-If($args.Count -eq 0) {
+If($timespans.Count -eq 0) {
     Write-Host "Program usage:" -ForegroundColor Blue
     Write-Host "    videocut.ps1 video-filename interval1 interval2 ..." -ForegroundColor Green
     Write-Host "    Interval - two timespans delimited with whitespace" -ForegroundColor Blue
@@ -18,8 +29,8 @@ If(-Not (Test-Path $file)) {
     exit 1
 }
 
-If($args.Count % 2 -eq 0) {
-    Write-Host "Check on odd number of arguments failed!" -ForegroundColor Red
+If($timespans.Count % 2 -eq 1) {
+    Write-Host "Check on even number of timespans failed!" -ForegroundColor Red
     Write-Host "Not enough arguments. You've probably mistaken in time intervals." -ForegroundColor Yellow
     Write-Host "Need two numbers in each interval." -ForegroundColor Yellow
     exit 1
@@ -31,14 +42,15 @@ If($IsLinux) {
 }
 
 $ts = @()
-For($i = 1; $i -lt $args.Count; $i++) {
-    If($args[$i] -Match "(2[0-3]|[0-1][0-9]):[0-5][0-9]:[0-5][0-9]([.]\d*)?") {
-        $ts += ([TimeSpan]$args[$i]).TotalSeconds
-    } ElseIf($args[$i] -Match "[0-5][0-9]:[0-5][0-9]([.]\d*)?") {
-        $var = "00:" + $args[$i]
+For($i = 0; $i -lt $timespans.Count; $i++) {
+    $timespan = $timespans[$i]
+    If($timespan -Match "(2[0-3]|[0-1][0-9]):[0-5][0-9]:[0-5][0-9]([.]\d*)?") {
+        $ts += ([TimeSpan]$timespan).TotalSeconds
+    } ElseIf($timespan -Match "[0-5][0-9]:[0-5][0-9]([.]\d*)?") {
+        $var = "00:" + $timespan
         $ts += ([TimeSpan]$var).TotalSeconds
     } Else {
-        Write-Host "Check on timespan syntax failed on" -ForegroundColor Red
+        Write-Host "Check on timespan $timespan syntax failed on" -ForegroundColor Red
         Write-Host "                                   $($args[$i])" -ForegroundColor Cyan
         Write-Host "Timespan should be written in the following formats." -ForegroundColor Yellow
         Write-Host "General timespan format:" -ForegroundColor Yellow
@@ -62,10 +74,10 @@ For($i = 0; $i -lt $ts.Count / 2; $i++) {
     $newfile = (Get-Item $file).DirectoryName + $del + "intermediate" + $i;
     If($IsMP4) {
         $newfile += ".ts"
-        ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts $newfile -y
+        ffmpeg -ss $t1 -i $file -map 0:$track -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts $newfile -y
     } Else {
         $newfile += (Get-Item $file).Extension
-        ffmpeg -ss $t1 -i $file -c copy -t $t2 $newfile -y
+        ffmpeg -ss $t1 -i $file -map 0:$track -c copy -t $t2 $newfile -y
     }
     $files += "'" + $newfile + "'"
 }
