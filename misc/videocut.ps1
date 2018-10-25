@@ -5,12 +5,13 @@ Param(
     Position=0)]
     [String[]]
     $file,
-	[parameter(ParameterSetName="TrackNum")]
-	[alias("Audio", "A")]
-	[Int]
-	$track = 0,
+	  [parameter(ParameterSetName="TrackNum")]
+	  [alias("Audio", "A")]
+	  [Int]
+	  $track = 0,
+	  [Switch] $P,
     [parameter(Mandatory=$true,
-    ValueFromRemainingArguments=$true)]
+               ValueFromRemainingArguments=$true)]
     [String[]]
     $timespans
 )
@@ -74,7 +75,11 @@ For($i = 0; $i -lt $ts.Count / 2; $i++) {
     $newfile = (Get-Item $file).DirectoryName + $del + "intermediate" + $i;
     If($IsMP4) {
         $newfile += ".ts"
-        ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y
+        If($P) {
+            ffmpeg -ss $t1 -i $file -c:v libx264 -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y
+        } Else {
+            ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y   
+        }
     } Else {
         $newfile += (Get-Item $file).Extension
         ffmpeg -ss $t1 -i $file -c copy -t $t2 -map 0:v -map 0:a:$track $newfile -y
@@ -95,7 +100,11 @@ If(Test-Path $finalfile) {
     Remove-Item $finalfile
 }
 If($IsMP4) {
-    ffmpeg -safe 0 -f concat -i $txtfile -c copy -bsf:a aac_adtstoasc $finalfile -y
+    If($P) {
+        ffmpeg -safe 0 -f concat -i $txtfile -c:a copy $finalfile -y
+    } Else {
+        ffmpeg -safe 0 -f concat -i $txtfile -c copy -bsf:a aac_adtstoasc $finalfile -y
+    }
 } Else {
     ffmpeg -safe 0 -f concat -i $txtfile -c copy $finalfile -y
 }
