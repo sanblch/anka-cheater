@@ -78,7 +78,7 @@ For($i = 0; $i -lt $ts.Count / 2; $i++) {
         If($P) {
             ffmpeg -ss $t1 -i $file -c:v libx264 -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y
         } Else {
-            ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y   
+            ffmpeg -ss $t1 -i $file -c copy -bsf:v h264_mp4toannexb -t $t2 -f mpegts -map 0:v -map 0:a:$track $newfile -y
         }
     } Else {
         $newfile += (Get-Item $file).Extension
